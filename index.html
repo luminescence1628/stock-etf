@@ -1,898 +1,660 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>台股與ETF高息智能觀測站 | AI進出場預測與即時新聞追蹤</title>
+  <title>TWSE PULSE AI｜台股與高股息 ETF 智慧選股及即時行情追蹤看板</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
     body {
-      font-family: 'Noto Sans TC', sans-serif;
-      background-color: #090d16;
-      color: #f1f5f9;
+      font-family: 'Inter', 'Noto Sans TC', sans-serif;
+      background-color: #0b0f19;
+      color: #e2e8f0;
     }
-    .font-mono-num {
-      font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
-    }
-    /* Custom scrollbar */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #475569; }
-    @keyframes pulse-border {
-      0%, 100% { border-color: rgba(244, 63, 94, 0.5); }
-      50% { border-color: rgba(244, 63, 94, 1); }
-    }
-    .flash-up { animation: flashRed 0.8s ease-out; }
-    .flash-down { animation: flashGreen 0.8s ease-out; }
+    /* 台股習慣：紅漲綠跌 */
+    .tw-up { color: #f43f5e; }
+    .tw-up-bg { background-color: rgba(244, 63, 94, 0.15); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.3); }
+    .tw-down { color: #10b981; }
+    .tw-down-bg { background-color: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .tw-flat { color: #94a3b8; }
+
+    .flash-up { animation: flashRed 0.7s ease-out; }
+    .flash-down { animation: flashGreen 0.7s ease-out; }
     @keyframes flashRed {
-      0% { background-color: rgba(239, 68, 68, 0.35); }
+      0% { background-color: rgba(244, 63, 94, 0.35); }
       100% { background-color: transparent; }
     }
     @keyframes flashGreen {
       0% { background-color: rgba(16, 185, 129, 0.35); }
       100% { background-color: transparent; }
     }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
   </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-  <!-- Top Live Breaking News Ticker -->
-  <div class="bg-gradient-to-r from-slate-900 via-indigo-950/80 to-slate-900 border-b border-slate-800 px-4 py-2 text-xs">
-    <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
-      <div class="flex items-center gap-2.5 overflow-hidden flex-1">
-        <span class="shrink-0 inline-flex items-center gap-1.5 bg-rose-600/20 text-rose-400 border border-rose-500/40 px-2 py-0.5 rounded font-bold">
-          <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>
-          即時快訊
-        </span>
-        <div id="ticker-content" class="truncate text-slate-200 font-medium flex items-center gap-2">
-          <!-- Dynamic ticker -->
-        </div>
-      </div>
-      <div class="hidden sm:flex items-center gap-2 shrink-0 text-slate-400">
-        <span id="ticker-time">剛剛更新</span>
-        <button onclick="nextTicker()" class="p-1 hover:text-white rounded hover:bg-slate-800" title="下一則快訊">
-          <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Main Header -->
+  <!-- Top Navigation & Market Indices -->
   <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-30">
-    <div class="max-w-7xl mx-auto px-4 py-3.5 flex flex-wrap items-center justify-between gap-4">
+    <div class="max-w-[1440px] mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-amber-500 flex items-center justify-center shadow-lg shadow-rose-500/20">
-          <i data-lucide="radar" class="w-6 h-6 text-white"></i>
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-rose-500 to-amber-500 flex items-center justify-center font-bold text-white shadow-lg shadow-rose-500/20">
+          AI
         </div>
         <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-lg sm:text-xl font-black tracking-tight text-white">台股與ETF高息智能觀測站</h1>
-            <span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold">AI 預測 + 即時新聞</span>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            TWSE PULSE AI
+            <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">台股＋高息ETF監控</span>
+          </h1>
+          <p class="text-xs text-slate-400">低價高殖利率智慧排序・AI 30日漲跌預測・24H即時新聞</p>
+        </div>
+      </div>
+
+      <!-- Market Indices -->
+      <div class="flex flex-wrap items-center gap-4 text-sm">
+        <div class="bg-slate-800/80 border border-slate-700/70 rounded-lg px-3 py-1.5 flex items-center gap-3">
+          <div>
+            <div class="text-[11px] text-slate-400">加權指數 (TAIEX)</div>
+            <div class="font-bold text-white flex items-center gap-1.5">
+              <span id="taiex-price">22,845.60</span>
+              <span id="taiex-change" class="text-xs tw-up">▲ +142.35 (+0.63%)</span>
+            </div>
           </div>
-          <p class="text-xs text-slate-400">現金殖利率 ≥5% 優先展示・≥20% 超高息置頂・銅板低價高息優先</p>
+        </div>
+        <div class="bg-slate-800/80 border border-slate-700/70 rounded-lg px-3 py-1.5 flex items-center gap-3">
+          <div>
+            <div class="text-[11px] text-slate-400">櫃買指數 (TPEx)</div>
+            <div class="font-bold text-white flex items-center gap-1.5">
+              <span id="tpex-price">264.18</span>
+              <span id="tpex-change" class="text-xs tw-up">▲ +1.85 (+0.71%)</span>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Live Controls -->
-      <div class="flex items-center gap-2.5 flex-wrap">
-        <div class="flex items-center gap-2 bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-1.5 text-xs">
-          <span id="live-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span id="live-status" class="text-slate-300 font-medium">即時連線中 (4s)</span>
-          <span class="text-slate-600">|</span>
-          <span id="last-update-clock" class="font-mono-num text-amber-400">--:--:--</span>
+      <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5 text-xs text-slate-300 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+          <span id="live-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span id="live-status">即時更新中 (3s)</span>
         </div>
-        <button id="toggle-live-btn" onclick="toggleLive()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
-          <i data-lucide="pause" class="w-3.5 h-3.5"></i>
-          <span>暫停更新</span>
+        <button id="toggle-live-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+          暫停更新
         </button>
-        <button onclick="manualTick()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow transition">
-          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-          <span>立即跳動報價</span>
+        <button id="refresh-now-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-rose-600 hover:bg-rose-500 text-white transition shadow">
+          立即刷新
         </button>
       </div>
     </div>
   </header>
 
   <!-- Main Content -->
-  <main class="max-w-7xl mx-auto w-full px-4 py-5 flex-1 space-y-5">
-
-    <!-- Top Summary KPI Cards -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <div class="bg-slate-900 border border-rose-500/30 rounded-xl p-3.5 relative overflow-hidden">
-        <div class="text-xs text-rose-400 font-semibold flex items-center gap-1.5">
-          <i data-lucide="flame" class="w-3.5 h-3.5"></i> 殖利率 ≥ 20% 超高息
-        </div>
-        <div id="kpi-super-yield" class="text-2xl font-black text-white mt-1 font-mono-num">4 檔</div>
-        <div class="text-[11px] text-slate-400 mt-0.5">系統已自動優先置頂顯示</div>
-      </div>
-      <div class="bg-slate-900 border border-amber-500/30 rounded-xl p-3.5">
-        <div class="text-xs text-amber-400 font-semibold flex items-center gap-1.5">
-          <i data-lucide="coins" class="w-3.5 h-3.5"></i> 現金殖利率 ≥ 5% 精選
-        </div>
-        <div id="kpi-yield-5" class="text-2xl font-black text-white mt-1 font-mono-num">15 檔</div>
-        <div class="text-[11px] text-slate-400 mt-0.5">已優先展示並標示高息徽章</div>
-      </div>
-      <div class="bg-slate-900 border border-emerald-500/30 rounded-xl p-3.5">
-        <div class="text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
-          <i data-lucide="trending-up" class="w-3.5 h-3.5"></i> AI 建議適合進場
-        </div>
-        <div id="kpi-buy-signal" class="text-2xl font-black text-white mt-1 font-mono-num">-- 檔</div>
-        <div class="text-[11px] text-slate-400 mt-0.5">回測支撐區或高息買點浮現</div>
-      </div>
-      <div class="bg-slate-900 border border-indigo-500/30 rounded-xl p-3.5">
-        <div class="text-xs text-indigo-400 font-semibold flex items-center gap-1.5">
-          <i data-lucide="newspaper" class="w-3.5 h-3.5"></i> 實時追蹤財經快訊
-        </div>
-        <div id="kpi-news-count" class="text-2xl font-black text-white mt-1 font-mono-num">-- 則</div>
-        <div class="text-[11px] text-slate-400 mt-0.5">每 6 秒自動推播個股與ETF消息</div>
-      </div>
-    </div>
-
-    <!-- Search & Filter Toolbar -->
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
-      <div class="flex flex-col md:flex-row gap-3">
-        <!-- Search Input -->
-        <div class="relative flex-1">
-          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-          <input
-            id="search-input"
-            type="text"
-            oninput="renderAll()"
-            placeholder="搜尋股票代號、名稱或產業 (例如：00878、台積電、2442、高股息、金融)..."
-            class="w-full bg-slate-950 border border-slate-700 focus:border-indigo-500 rounded-lg pl-10 pr-9 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition"
-          />
-          <button onclick="clearSearch()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs">清除</button>
-        </div>
-
-        <!-- Asset Type Filter -->
-        <div class="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800 shrink-0">
-          <button onclick="setCategory('ALL')" id="cat-ALL" class="cat-btn px-3 py-1.5 rounded-md text-xs font-bold bg-indigo-600 text-white transition">全部標的</button>
-          <button onclick="setCategory('ETF')" id="cat-ETF" class="cat-btn px-3 py-1.5 rounded-md text-xs font-bold text-slate-400 hover:text-white transition">僅看 ETF</button>
-          <button onclick="setCategory('STOCK')" id="cat-STOCK" class="cat-btn px-3 py-1.5 rounded-md text-xs font-bold text-slate-400 hover:text-white transition">僅看個股</button>
-        </div>
-
-        <!-- Sort Select -->
-        <select id="sort-select" onchange="renderAll()" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-semibold text-slate-200 outline-none focus:border-indigo-500">
-          <option value="SMART">⭐ 智能推薦 (現金殖利率 ≥5% & ≥20%超高息優先)</option>
-          <option value="YIELD_DESC">💰 殖利率由高到低</option>
-          <option value="PRICE_ASC">🪙 股價由低到高 (銅板股優先)</option>
-          <option value="UPSIDE_DESC">🚀 AI 預測漲幅空間最高</option>
-          <option value="CHANGE_DESC">📈 今日漲幅最高</option>
-        </select>
-      </div>
-
-      <!-- Quick Tag Filters -->
-      <div class="flex items-center gap-2 flex-wrap text-xs">
-        <span class="text-slate-400">快速篩選：</span>
-        <button onclick="toggleQuickFilter('YIELD_5_PLUS')" id="qf-YIELD_5_PLUS" class="qf-btn px-2.5 py-1 rounded-full border border-amber-500/40 bg-amber-500/15 text-amber-300 hover:border-amber-400 transition">💰 現金殖利率 ≥ 5%</button>
-        <button onclick="toggleQuickFilter('SUPER_YIELD')" id="qf-SUPER_YIELD" class="qf-btn px-2.5 py-1 rounded-full border border-slate-700 bg-slate-800/60 text-slate-300 hover:border-rose-500/50 transition">🔥 殖利率 ≥ 20%</button>
-        <button onclick="toggleQuickFilter('LOW_PRICE_HIGH_YIELD')" id="qf-LOW_PRICE_HIGH_YIELD" class="qf-btn px-2.5 py-1 rounded-full border border-slate-700 bg-slate-800/60 text-slate-300 hover:border-amber-500/50 transition">🪙 低價高息 (&lt;40元且≥8%)</button>
-        <button onclick="toggleQuickFilter('BUY_NOW')" id="qf-BUY_NOW" class="qf-btn px-2.5 py-1 rounded-full border border-slate-700 bg-slate-800/60 text-slate-300 hover:border-emerald-500/50 transition">🟢 適合進場買點</button>
-        <button onclick="toggleQuickFilter('SELL_SOON')" id="qf-SELL_SOON" class="qf-btn px-2.5 py-1 rounded-full border border-slate-700 bg-slate-800/60 text-slate-300 hover:border-rose-500/50 transition">🔴 接近停利賣點</button>
-      </div>
-    </div>
-
-    <!-- Split Workspace: Left Stock/ETF Table & Right AI Detail Panel -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+  <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 py-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
+    
+    <!-- Left 8 Cols: Screener & Chart -->
+    <div class="lg:col-span-8 flex flex-col gap-5">
       
-      <!-- Left Column: Stock & ETF List (7 cols) -->
-      <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-        <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <h2 class="font-bold text-sm text-white">即時行情與 AI 預測清單</h2>
-            <span id="list-count-badge" class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono-num">20 檔</span>
+      <!-- Search & Filter Bar -->
+      <section class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl">
+        <div class="flex flex-col md:flex-row gap-3 justify-between">
+          <!-- Search Input -->
+          <div class="relative flex-1">
+            <input
+              id="search-input"
+              type="text"
+              placeholder="搜尋股票代號或名稱（例如：00919、00878、台積電、中信金、隆大...）"
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+            />
+            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"></path>
+            </svg>
           </div>
-          <span class="text-[11px] text-slate-400">點擊任一標的查看 30日預測圖與試算</span>
+
+          <!-- Sort Selector -->
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="sort-select" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+              <option value="smart">💎 智慧優先：低股價＋高殖利率 CP值</option>
+              <option value="yield">💰 現金殖利率（高 → 低）</option>
+              <option value="priceAsc">🪙 一股價格（低 → 高）</option>
+              <option value="aiUpside">🚀 AI 30日預測漲幅（高 → 低）</option>
+            </select>
+          </div>
         </div>
 
+        <!-- Quick Filter Pills -->
+        <div class="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-slate-800/80 text-xs">
+          <span class="text-slate-400">快速篩選：</span>
+          <button data-filter="all" class="filter-btn active px-3 py-1 rounded-full bg-amber-500 text-slate-950 font-semibold">全部標的</button>
+          <button data-filter="gem" class="filter-btn px-3 py-1 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700">💎 銅板高息精選 (&lt;50元 &amp; ≥5%)</button>
+          <button data-filter="yield5" class="filter-btn px-3 py-1 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700">🔥 殖利率 ≥ 5%</button>
+          <button data-filter="etf" class="filter-btn px-3 py-1 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700">📊 台灣高息 ETF</button>
+          <button data-filter="stock" class="filter-btn px-3 py-1 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700">🏢 上市櫃個股</button>
+          <button data-filter="buy" class="filter-btn px-3 py-1 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700">🟢 適合進場買點</button>
+        </div>
+      </section>
+
+      <!-- Selected Stock Detail & AI Forecast Panel -->
+      <section id="detail-panel" class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl">
+        <div class="flex flex-wrap items-start justify-between gap-4 mb-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="detail-code" class="px-2 py-0.5 rounded bg-slate-800 text-amber-400 font-mono text-xs font-bold">00919</span>
+              <h2 id="detail-name" class="text-lg font-bold text-white">群益台灣精選高息</h2>
+              <span id="detail-badge" class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">💎 低價高息精選</span>
+            </div>
+            <p id="detail-strategy" class="text-xs text-slate-300 mt-1.5">
+              AI 策略建議：目前股價處於季線支撐區且現金殖利率達 9.8%，適合分批進場布局，目標停利區間 26.8 ~ 27.5 元。
+            </p>
+          </div>
+          <div class="grid grid-cols-3 gap-3 text-right">
+            <div class="bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800">
+              <div class="text-[11px] text-slate-400">建議進場價</div>
+              <div id="detail-buy-zone" class="text-sm font-bold text-emerald-400">23.20 - 23.80</div>
+            </div>
+            <div class="bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800">
+              <div class="text-[11px] text-slate-400">建議停利賣點</div>
+              <div id="detail-sell-zone" class="text-sm font-bold text-rose-400">26.80 - 27.50</div>
+            </div>
+            <div class="bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800">
+              <div class="text-[11px] text-slate-400">預估年股息 / 殖利率</div>
+              <div id="detail-div-info" class="text-sm font-bold text-amber-400">2.36元 (9.8%)</div>
+            </div>
+          </div>
+        </div>
+        <div class="h-52 w-full">
+          <canvas id="forecastChart"></canvas>
+        </div>
+      </section>
+
+      <!-- Stock & ETF Table -->
+      <section class="bg-slate-900 border border-slate-800 rounded-xl shadow-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+          <div class="text-sm font-semibold text-white">
+            智能選股清單 <span id="result-count" class="text-xs font-normal text-slate-400 ml-1">(共 18 檔)</span>
+          </div>
+          <div class="text-xs text-slate-400">點擊任一列查看 AI 走勢圖與買賣價位｜紅漲綠跌</div>
+        </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
             <thead>
-              <tr class="bg-slate-950/70 text-[11px] text-slate-400 border-b border-slate-800">
-                <th class="py-2.5 px-3">代號 / 名稱</th>
-                <th class="py-2.5 px-2 text-right">即時股價</th>
-                <th class="py-2.5 px-2 text-right">年化殖利率 / 股息</th>
-                <th class="py-2.5 px-2 text-right">AI 30日預測</th>
-                <th class="py-2.5 px-3 text-center">操作訊號</th>
+              <tr class="bg-slate-950/70 text-[11px] uppercase text-slate-400 border-b border-slate-800">
+                <th class="py-3 px-3">代號 / 名稱</th>
+                <th class="py-3 px-3 text-right">即時股價</th>
+                <th class="py-3 px-3 text-right">漲跌幅</th>
+                <th class="py-3 px-3 text-right">年股息 / 殖利率</th>
+                <th class="py-3 px-3 text-right">AI 30日預測</th>
+                <th class="py-3 px-3 text-center">操作訊號</th>
+                <th class="py-3 px-3 text-right">進場 / 賣出參考</th>
               </tr>
             </thead>
-            <tbody id="stock-table-body" class="divide-y divide-slate-800/70 text-xs">
-              <!-- Populated by JS -->
+            <tbody id="stock-table-body" class="divide-y divide-slate-800/70 text-sm">
+              <!-- Dynamic Rows -->
             </tbody>
           </table>
         </div>
-      </div>
-
-      <!-- Right Column: AI Deep Diagnosis & Calculator (5 cols) -->
-      <div class="lg:col-span-5 space-y-4 lg:sticky lg:top-20">
-        <div id="detail-panel" class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-4">
-          <!-- Populated by JS -->
-        </div>
-      </div>
+      </section>
     </div>
 
-    <!-- Real-Time Financial News Center -->
-    <section class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-4">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-            <i data-lucide="radio" class="w-4 h-4"></i>
+    <!-- Right 4 Cols: 24H Real-Time News Feed -->
+    <aside class="lg:col-span-4 flex flex-col gap-5">
+      <section class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl flex flex-col h-full max-h-[960px]">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+            <h2 class="text-base font-bold text-white">24H 台股即時新聞與配息快訊</h2>
           </div>
-          <div>
-            <h2 class="text-base font-bold text-white flex items-center gap-2">
-              即時財經與個股新聞追蹤中心
-              <span class="text-[11px] px-2 py-0.5 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30 font-semibold">每 6 秒實時推播</span>
-            </h2>
-            <p class="text-xs text-slate-400">點擊新聞內的「#代號」標籤可直接切換上方標的並檢視進出場影響</p>
-          </div>
+          <span id="news-update-time" class="text-[11px] text-slate-400">剛剛更新</span>
         </div>
 
-        <!-- News Filter Tabs -->
-        <div class="flex items-center gap-1.5 flex-wrap text-xs">
-          <button onclick="setNewsFilter('ALL')" id="nf-ALL" class="nf-btn px-2.5 py-1.5 rounded-lg font-semibold bg-indigo-600 text-white">全部快訊</button>
-          <button onclick="setNewsFilter('BULLISH')" id="nf-BULLISH" class="nf-btn px-2.5 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-300 hover:text-white">🔴 利多題材</button>
-          <button onclick="setNewsFilter('BEARISH')" id="nf-BEARISH" class="nf-btn px-2.5 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-300 hover:text-white">🟢 利空警示</button>
-          <button onclick="setNewsFilter('DIVIDEND')" id="nf-DIVIDEND" class="nf-btn px-2.5 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-300 hover:text-white">💰 高息/ETF動態</button>
-          <button onclick="setNewsFilter('SELECTED')" id="nf-SELECTED" class="nf-btn px-2.5 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-300 hover:text-white">🎯 僅看目前選中標的</button>
-        </div>
-      </div>
+        <p class="text-xs text-slate-400 mt-2 mb-3">
+          點擊新聞內的<span class="text-amber-400 font-medium">股票代號標籤</span>，可一鍵篩選並查看 AI 買賣點預測。
+        </p>
 
-      <div id="news-feed-list" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1">
-        <!-- Populated by JS -->
-      </div>
-    </section>
+        <div id="news-feed" class="flex-1 overflow-y-auto space-y-3 pr-1">
+          <!-- Dynamic News Items -->
+        </div>
+      </section>
+    </aside>
 
   </main>
 
-  <footer class="border-t border-slate-800/80 py-4 px-4 text-center text-xs text-slate-500">
-    台股與ETF高息智能觀測站 • 畫面報價為即時模擬演算法跳動展示，AI 預測區間與進出場點位僅供研究參考，投資前請審慎評估風險。
+  <footer class="border-t border-slate-800/80 py-4 text-center text-xs text-slate-500">
+    免責聲明：本系統提供之即時行情模擬、現金殖利率估算與 AI 漲跌預測僅供投資研究與策略參考，不構成任何投資買賣邀約，投資人應審慎評估自身風險。
   </footer>
 
   <script>
-    // --- Initial Stock & ETF Dataset ---
-    const INITIAL_ASSETS = [
-      { code: '00892', name: '富邦台灣半導體', type: 'ETF', sector: '半導體ETF', price: 18.45, prevClose: 18.10, dividend: 3.85, yieldRate: 20.87, pred30dPct: 8.4, entryLow: 17.80, entryHigh: 18.30, exitTarget: 20.50, signal: 'BUY', reason: '受惠晶圓代工與封測資本支出上調，配息率突破20%具強勁填息動能。', history: [17.4, 17.6, 17.5, 17.8, 17.9, 18.0, 18.1, 18.0, 18.1, 18.45] },
-      { code: '00943', name: '兆豐電子高息等權', type: 'ETF', sector: '高股息ETF', price: 16.20, prevClose: 16.05, dividend: 3.32, yieldRate: 20.49, pred30dPct: 7.2, entryLow: 15.70, entryHigh: 16.15, exitTarget: 17.80, signal: 'BUY', reason: '等權重機制自動低買高賣電子高息股，股價低於17元具高安全邊際。', history: [15.6, 15.7, 15.8, 15.75, 15.9, 16.0, 15.95, 16.0, 16.05, 16.20] },
-      { code: '00934', name: '中信成長高股息', type: 'ETF', sector: '高股息ETF', price: 19.85, prevClose: 19.60, dividend: 4.02, yieldRate: 20.25, pred30dPct: 6.8, entryLow: 19.10, entryHigh: 19.70, exitTarget: 21.60, signal: 'HOLD', reason: '除息前資金卡位明顯，若回測5日線19.6元附近可分批承接。', history: [18.9, 19.1, 19.0, 19.2, 19.4, 19.5, 19.45, 19.55, 19.60, 19.85] },
-      { code: '2442', name: '新美齊', type: 'STOCK', sector: '營建地產', price: 28.60, prevClose: 27.90, dividend: 5.80, yieldRate: 20.28, pred30dPct: 11.5, entryLow: 27.00, entryHigh: 28.40, exitTarget: 32.50, signal: 'BUY', reason: '完工交屋入帳高峰，高股息配發題材發酵，突破月線轉強。', history: [26.2, 26.5, 26.8, 27.0, 27.2, 27.5, 27.4, 27.7, 27.9, 28.60] },
-      { code: '00919', name: '群益台灣精選高息', type: 'ETF', sector: '高股息ETF', price: 23.80, prevClose: 23.65, dividend: 2.88, yieldRate: 12.10, pred30dPct: 5.9, entryLow: 23.20, entryHigh: 23.75, exitTarget: 25.50, signal: 'BUY', reason: '成分股鎖定高ROE與高股息航運金融股，季配息穩定度高。', history: [23.1, 23.2, 23.3, 23.25, 23.4, 23.5, 23.55, 23.6, 23.65, 23.80] },
-      { code: '00878', name: '國泰永續高股息', type: 'ETF', sector: 'ESG高息ETF', price: 22.45, prevClose: 22.35, dividend: 2.20, yieldRate: 9.80, pred30dPct: 4.8, entryLow: 21.90, entryHigh: 22.40, exitTarget: 23.90, signal: 'BUY', reason: '百萬受益人護盤買盤強勁，波動率低，適合長線定期定額與逢低加碼。', history: [21.9, 22.0, 22.05, 22.1, 22.15, 22.2, 22.25, 22.3, 22.35, 22.45] },
-      { code: '2528', name: '皇普', type: 'STOCK', sector: '營建地產', price: 34.20, prevClose: 33.80, dividend: 3.60, yieldRate: 10.53, pred30dPct: 9.1, entryLow: 32.80, entryHigh: 34.00, exitTarget: 38.00, signal: 'BUY', reason: '建案入帳能見度高，低價高息吸引存股族進駐。', history: [32.5, 32.8, 33.0, 33.1, 33.4, 33.5, 33.6, 33.7, 33.8, 34.20] },
-      { code: '5519', name: '隆大', type: 'STOCK', sector: '營建地產', price: 31.50, prevClose: 31.20, dividend: 3.10, yieldRate: 9.84, pred30dPct: 7.8, entryLow: 30.20, entryHigh: 31.40, exitTarget: 34.50, signal: 'BUY', reason: '南部建案銷售順暢，股價處於季線支撐上方，殖利率近10%。', history: [30.1, 30.3, 30.5, 30.6, 30.8, 30.9, 31.0, 31.1, 31.2, 31.50] },
-      { code: '2884', name: '玉山金', type: 'STOCK', sector: '金融控股', price: 28.90, prevClose: 28.75, dividend: 2.45, yieldRate: 8.48, pred30dPct: 6.2, entryLow: 28.00, entryHigh: 28.80, exitTarget: 31.20, signal: 'BUY', reason: '財富管理手續費收入大增，外資連續買超，兼顧股息與價差。', history: [27.9, 28.1, 28.2, 28.3, 28.4, 28.5, 28.6, 28.7, 28.75, 28.90] },
-      { code: '2891', name: '中信金', type: 'STOCK', sector: '金融控股', price: 36.80, prevClose: 36.40, dividend: 3.10, yieldRate: 8.42, pred30dPct: 6.5, entryLow: 35.50, entryHigh: 36.60, exitTarget: 39.80, signal: 'HOLD', reason: '獲利創同期新高，惟短線漲幅已近前高，建議拉回至36.2元再切入。', history: [35.0, 35.2, 35.4, 35.6, 35.8, 36.0, 36.1, 36.3, 36.4, 36.80] },
-      { code: '1432', name: '大魯閣', type: 'STOCK', sector: '觀光餐旅', price: 21.30, prevClose: 21.55, dividend: 2.15, yieldRate: 10.09, pred30dPct: -3.2, entryLow: 19.50, entryHigh: 20.20, exitTarget: 22.80, signal: 'SELL', reason: '短線利多出盡且量能萎縮，建議高檔先獲利了結，待回測20元再接回。', history: [22.4, 22.3, 22.1, 22.0, 21.9, 21.8, 21.7, 21.6, 21.55, 21.30] },
-      { code: '00923', name: '群益台ESG低碳50', type: 'ETF', sector: '市值低碳ETF', price: 21.90, prevClose: 21.60, dividend: 1.85, yieldRate: 8.45, pred30dPct: 7.6, entryLow: 21.20, entryHigh: 21.80, exitTarget: 23.80, signal: 'BUY', reason: '台積電與AI權值股占比高，具備低碳轉型題材與穩健配息雙優勢。', history: [20.8, 21.0, 21.1, 21.2, 21.3, 21.4, 21.5, 21.55, 21.6, 21.90] },
-      { code: '0056', name: '元大高股息', type: 'ETF', sector: '高股息ETF', price: 38.40, prevClose: 38.20, dividend: 3.20, yieldRate: 8.33, pred30dPct: 5.1, entryLow: 37.50, entryHigh: 38.30, exitTarget: 40.80, signal: 'BUY', reason: '台灣最具代表性高股息ETF，AI伺服器成分股貢獻可觀資本利得。', history: [37.4, 37.5, 37.6, 37.7, 37.8, 37.9, 38.0, 38.1, 38.2, 38.40] },
-      { code: '00922', name: '國泰台灣領袖50', type: 'ETF', sector: '市值型ETF', price: 22.60, prevClose: 22.30, dividend: 1.65, yieldRate: 7.30, pred30dPct: 8.2, entryLow: 21.80, entryHigh: 22.50, exitTarget: 24.60, signal: 'BUY', reason: '親民版市值型ETF，緊跟台股大盤多頭趨勢且具高填息率。', history: [21.4, 21.6, 21.7, 21.8, 21.9, 22.0, 22.1, 22.2, 22.3, 22.60] },
-      { code: '00981A', name: '主動野村臺灣優選', type: 'ETF', sector: '主動式ETF', price: 15.80, prevClose: 15.55, dividend: 1.25, yieldRate: 7.91, pred30dPct: 10.4, entryLow: 15.20, entryHigh: 15.75, exitTarget: 17.60, signal: 'BUY', reason: '主動選股靈活調整AI與高息部位，近期淨值屢創新高。', history: [14.9, 15.0, 15.1, 15.2, 15.3, 15.4, 15.45, 15.5, 15.55, 15.80] },
-      { code: '006208', name: '富邦台50', type: 'ETF', sector: '市值型ETF', price: 114.50, prevClose: 113.00, dividend: 4.10, yieldRate: 3.58, pred30dPct: 7.5, entryLow: 110.00, entryHigh: 114.00, exitTarget: 124.00, signal: 'HOLD', reason: '內扣費用低廉，長期跟隨台灣前50大企業成長，適合逢回分批佈局。', history: [109.0, 110.0, 110.5, 111.0, 111.5, 112.0, 112.5, 112.8, 113.0, 114.50] },
-      { code: '0050', name: '元大台灣50', type: 'ETF', sector: '市值型ETF', price: 198.50, prevClose: 196.00, dividend: 6.80, yieldRate: 3.43, pred30dPct: 7.4, entryLow: 191.00, entryHigh: 198.00, exitTarget: 215.00, signal: 'HOLD', reason: '外資回補權值股首選，技術面沿10日均線震盪走高。', history: [189.0, 190.5, 191.5, 192.5, 193.5, 194.5, 195.0, 195.5, 196.0, 198.50] },
-      { code: '2330', name: '台積電', type: 'STOCK', sector: '半導體權值', price: 1085.00, prevClose: 1065.00, dividend: 18.00, yieldRate: 1.66, pred30dPct: 9.8, entryLow: 1040.00, entryHigh: 1080.00, exitTarget: 1200.00, signal: 'BUY', reason: '2奈米製程需求超預期，AI晶片訂單滿載至明年，長線多頭格局不變。', history: [1025, 1035, 1040, 1045, 1050, 1055, 1060, 1062, 1065, 1085] },
-      { code: '2317', name: '鴻海', type: 'STOCK', sector: 'AI伺服器', price: 218.50, prevClose: 214.00, dividend: 6.20, yieldRate: 2.84, pred30dPct: 8.6, entryLow: 208.00, entryHigh: 217.00, exitTarget: 240.00, signal: 'BUY', reason: 'GB200/GB300 AI機櫃出貨放量，營收年增幅亮眼，法人持續調升目標價。', history: [204.0, 206.0, 207.5, 209.0, 210.5, 211.5, 212.5, 213.0, 214.0, 218.50] },
-      { code: '2382', name: '廣達', type: 'STOCK', sector: 'AI伺服器', price: 304.00, prevClose: 308.50, dividend: 10.50, yieldRate: 3.45, pred30dPct: -2.4, entryLow: 288.00, entryHigh: 296.00, exitTarget: 325.00, signal: 'SELL', reason: '短線漲多遇前波套牢賣壓，建議高檔減碼一趟，待回測月線292元再低接。', history: [316.0, 315.0, 314.0, 313.0, 312.0, 311.0, 310.0, 309.0, 308.5, 304.00] }
+    // 1. 台灣代表性高息 ETF 與上市櫃個股資料庫（含低價高息標的）
+    const stocksData = [
+      { code: "00919", name: "群益台灣精選高息", type: "ETF", price: 23.85, prevClose: 23.62, dividend: 2.36, aiPredPct: 8.4, buyLow: 23.10, buyHigh: 23.90, sellLow: 26.50, sellHigh: 27.40, note: "配息維持高水準且股價親民，回測月線具強勁買盤支撐。" },
+      { code: "00878", name: "國泰永續高股息", type: "ETF", price: 22.40, prevClose: 22.28, dividend: 1.75, aiPredPct: 6.9, buyLow: 21.80, buyHigh: 22.45, sellLow: 24.50, sellHigh: 25.20, note: "成分股兼具AI伺服器與金融雙引擎，適合定期定額與低接。" },
+      { code: "00929", name: "復華台灣科技優息", type: "ETF", price: 18.92, prevClose: 18.80, dividend: 1.48, aiPredPct: 7.8, buyLow: 18.30, buyHigh: 19.00, sellLow: 20.80, sellHigh: 21.50, note: "月配息機制吸引存股族，股價低於20元具備高CP值優勢。" },
+      { code: "00940", name: "元大台灣價值高息", type: "ETF", price: 9.68, prevClose: 9.61, dividend: 0.62, aiPredPct: 9.1, buyLow: 9.40, buyHigh: 9.75, sellLow: 10.60, sellHigh: 11.10, note: "銅板價不到10元、殖利率逾6.4%，淨值穩步墊高。" },
+      { code: "5519", name: "隆大", type: "STOCK", price: 38.60, prevClose: 38.10, dividend: 3.20, aiPredPct: 10.5, buyLow: 37.00, buyHigh: 38.80, sellLow: 43.20, sellHigh: 45.00, note: "南部營建績優股，完工交屋潮帶動高配息，殖利率逾8%。" },
+      { code: "5213", name: "亞昕", type: "STOCK", price: 31.45, prevClose: 31.10, dividend: 2.45, aiPredPct: 8.9, buyLow: 30.20, buyHigh: 31.60, sellLow: 34.80, sellHigh: 36.20, note: "股價30元出頭且配息大方，現金殖利率達7.7%以上。" },
+      { code: "2536", name: "宏普", type: "STOCK", price: 34.20, prevClose: 34.35, dividend: 2.50, aiPredPct: 7.2, buyLow: 33.00, buyHigh: 34.30, sellLow: 37.50, sellHigh: 39.00, note: "雙北推案穩健，低價高殖利率代表標的，適合逢回布局。" },
+      { code: "2891", name: "中信金", type: "STOCK", price: 36.85, prevClose: 36.40, dividend: 2.05, aiPredPct: 6.4, buyLow: 35.50, buyHigh: 36.90, sellLow: 39.80, sellHigh: 41.20, note: "獲利創高支撐配息能力，外資連續買超，殖利率穩站5.5%。" },
+      { code: "2890", name: "永豐金", type: "STOCK", price: 23.15, prevClose: 22.95, dividend: 1.25, aiPredPct: 5.8, buyLow: 22.30, buyHigh: 23.20, sellLow: 24.90, sellHigh: 25.80, note: "銀行與證券雙獲利引擎穩健，23元銅板價存股首選之一。" },
+      { code: "0056", name: "元大高股息", type: "ETF", price: 37.50, prevClose: 37.25, dividend: 3.10, aiPredPct: 6.2, buyLow: 36.20, buyHigh: 37.60, sellLow: 40.50, sellHigh: 41.80, note: "老牌高股息ETF，連續配息紀錄完整，殖利率逾8.2%。" },
+      { code: "2885", name: "元大金", type: "STOCK", price: 32.80, prevClose: 32.55, dividend: 1.75, aiPredPct: 5.5, buyLow: 31.50, buyHigh: 32.90, sellLow: 35.20, sellHigh: 36.50, note: "台股成交量熱絡受惠股，股息成長穩定，殖利率逾5.3%。" },
+      { code: "2603", name: "長榮", type: "STOCK", price: 214.50, prevClose: 211.00, dividend: 18.50, aiPredPct: 7.6, buyLow: 202.00, buyHigh: 215.00, sellLow: 235.00, sellHigh: 245.00, note: "高現金流與高殖利率代表，留意運價指數波動操作區間。" },
+      { code: "3231", name: "緯創", type: "STOCK", price: 112.00, prevClose: 110.50, dividend: 5.80, aiPredPct: 9.4, buyLow: 106.00, buyHigh: 112.50, sellLow: 124.00, sellHigh: 130.00, note: "AI伺服器出貨放量，兼顧成長性與逾5.1%現金殖利率。" },
+      { code: "2382", name: "廣達", type: "STOCK", price: 288.00, prevClose: 291.50, dividend: 14.80, aiPredPct: 6.8, buyLow: 278.00, buyHigh: 289.00, sellLow: 315.00, sellHigh: 325.00, note: "AI雲端大廠訂單能見度高，殖利率約5.1%，回檔可分批承接。" },
+      { code: "2454", name: "聯發科", type: "STOCK", price: 1285.00, prevClose: 1270.00, dividend: 66.00, aiPredPct: 5.2, buyLow: 1230.00, buyHigh: 1290.00, sellLow: 1380.00, sellHigh: 1420.00, note: "旗艦AI手機晶片市占攀升，殖利率約5.1%，高價權值首選。" },
+      { code: "0050", name: "元大台灣50", type: "ETF", price: 194.20, prevClose: 192.80, dividend: 6.20, aiPredPct: 5.9, buyLow: 188.00, buyHigh: 194.50, sellLow: 208.00, sellHigh: 215.00, note: "緊跟台股大盤市值龍頭，殖利率約3.2%，適合長線波段持有。" },
+      { code: "2330", name: "台積電", type: "STOCK", price: 1045.00, prevClose: 1035.00, dividend: 18.00, aiPredPct: 7.5, buyLow: 1010.00, buyHigh: 1045.00, sellLow: 1130.00, sellHigh: 1160.00, note: "全球晶圓代工龍頭，基本面最強，雖殖利率1.7%但資本利得空間大。" },
+      { code: "2317", name: "鴻海", type: "STOCK", price: 208.50, prevClose: 212.00, dividend: 10.60, aiPredPct: -2.4, buyLow: 195.00, buyHigh: 202.00, sellLow: 215.00, sellHigh: 222.00, note: "短線漲多面臨獲利了結賣壓，建議等回測200元整數關卡再進場。" }
     ];
 
-    // --- Initial Real-Time News Pool ---
-    let NEWS_FEED = [
-      { id: 101, time: '15:24', isNew: true, sentiment: 'BULLISH', category: 'DIVIDEND', codes: ['00892', '00943', '00934'], source: '鉅亨網快訊', title: '高息ETF配息王出爐！00892、00943年化配息率衝破20%，搶息買盤湧入爆量', impact: '強勁利多：除息前資金卡位效應顯著，短線支撐力道轉強。' },
-      { id: 102, time: '15:21', isNew: true, sentiment: 'BULLISH', category: 'TECH', codes: ['2330', '0050', '006208'], source: '經濟日報', title: '台積電2奈米產能全線滿載，外資調升目標價帶動市值型ETF同步走揚', impact: '正面催化：權值股領軍突破均線糾結，有利大盤延續多頭格局。' },
-      { id: 103, time: '15:18', isNew: false, sentiment: 'BULLISH', category: 'DIVIDEND', codes: ['2442', '2528', '5519'], source: '工商時報', title: '營建高股息族群迎交屋潮！新美齊、皇普股息殖利率吸睛，存股族逢低承接', impact: '偏多看待：低價位搭配高配息具防禦與補漲雙重優勢。' },
-      { id: 104, time: '15:14', isNew: false, sentiment: 'BEARISH', category: 'TECH', codes: ['2382'], source: '財訊快報', title: '部分AI伺服器組裝廠短線獲利了結賣壓出籠，廣達高檔震盪測試支撐', impact: '短線警示：技術指標過熱，建議依AI訊號分批停利或待回測再接。' },
-      { id: 105, time: '15:09', isNew: false, sentiment: 'BULLISH', category: 'DIVIDEND', codes: ['00878', '00919', '2884', '2891'], source: 'MoneyDJ理財網', title: '金控雙雄獲利報喜！玉山金、中信金帶動00878與00919成分股含金量攀升', impact: '穩健利多：金融股配息能力提升，強化高股息ETF填息速度。' },
-      { id: 106, time: '15:03', isNew: false, sentiment: 'BEARISH', category: 'GENERAL', codes: ['1432'], source: '中時新聞網', title: '觀光餐飲股短線漲幅已高，大魯閣量縮回檔整理，法人建議區間操作', impact: '短線調節：跌破5日均線，宜先觀察20元整數關卡防守力道。' }
+    // 即時新聞題庫
+    const newsTemplates = [
+      { tag: "00919", title: "高股息 ETF 買氣爆棚！00919 預估年化配息率穩居 9% 以上，低價優勢吸金", category: "ETF配息" },
+      { tag: "5519", title: "營建股迎入帳高峰！隆大 (5519) 現金殖利率衝破 8%，法人看好填息動能", category: "高殖利率" },
+      { tag: "2891", title: "金融股獲利報喜！中信金前十月獲利亮眼，外資連五日加碼買進", category: "籌碼動向" },
+      { tag: "00878", title: "百萬股民看過來！00878 成分股調整完成，AI 與金融雙引擎支撐配息", category: "ETF快訊" },
+      { tag: "00940", title: "不到10元銅板高息 ETF 受青睞，00940 成交量放大、殖利率逾 6.4%", category: "低價存股" },
+      { tag: "3231", title: "AI 伺服器需求續強！緯創營收年增雙位數，兼顧高成長與 5% 以上殖利率", category: "產業焦點" },
+      { tag: "5213", title: "低股價高配息成顯學！亞昕 (5213) 股價 30 元出頭、殖利率近 7.8%", category: "高殖利率" },
+      { tag: "2330", title: "台積電先進製程產能滿載，外資調升目標價並帶動台股大盤走揚", category: "權值動態" },
+      { tag: "00929", title: "月配息科技 ETF 買盤回溫，00929 股價不到 20 元成小資族首選", category: "ETF配息" },
+      { tag: "2890", title: "永豐金數位金融與財管手續費雙成長，23 元銅板價吸引長線存股資金", category: "金融快訊" }
     ];
 
-    const INCOMING_NEWS_TEMPLATES = [
-      { sentiment: 'BULLISH', category: 'DIVIDEND', codes: ['00919', '00878', '0056'], source: '盤中即時快訊', title: '高股息ETF買氣不減！00919、00878單日申購量放大，投信連續買超力挺', impact: '資金面利多：投信被動買盤持續挹注成分股底部支撐。' },
-      { sentiment: 'BULLISH', category: 'TECH', codes: ['2317', '2330'], source: '科技新報即時', title: '北美雲端大廠上修AI伺服器資本支出，鴻海、台積電供應鏈營收看旺', impact: '基本面利多：AI硬體需求能見度延伸，拉回仍具中線買點。' },
-      { sentiment: 'BULLISH', category: 'DIVIDEND', codes: ['00981A', '00923', '00922'], source: 'ETtoday財經', title: '主動式與低碳市值ETF表現亮眼，00981A靈活換股策略受市場青睞', impact: '動能偏多：資金輪動至具成長性與配息兼備之新世代ETF。' },
-      { sentiment: 'BEARISH', category: 'GENERAL', codes: ['2891', '2884'], source: '外資券商報告', title: '外資短線調節部分金融權值股鎖定獲利，金控族群進入高檔橫盤整理', impact: '中性偏保守：急漲不追高，待回測月線支撐區再行布局。' },
-      { sentiment: 'BULLISH', category: 'DIVIDEND', codes: ['00892', '2442'], source: '證交所公告追蹤', title: '高殖利率族群抗跌力強！00892與新美齊獲主力大戶低檔承接買單進駐', impact: '籌碼面偏多：高股息護體降低回檔風險，維持偏多操作建議。' }
-    ];
-
-    // --- State ---
-    let assets = JSON.parse(JSON.stringify(INITIAL_ASSETS));
-    let selectedCode = '00892';
-    let categoryFilter = 'ALL'; // ALL, ETF, STOCK
-    let quickFilters = new Set();
-    let newsFilter = 'ALL'; // ALL, BULLISH, BEARISH, DIVIDEND, SELECTED
+    let currentFilter = "all";
+    let currentSort = "smart";
+    let searchQuery = "";
+    let selectedCode = "00919";
     let isLive = true;
-    let tickerIdx = 0;
-    let newsTemplateIdx = 0;
-    let calcLots = 5; // Default 5 張 (5,000 shares)
-    let lastFlashed = {};
+    let forecastChart = null;
+    let liveNewsList = [];
 
-    // --- Taiwan Stock Tick Size Helper ---
-    function getTwTickSize(price) {
-      if (price < 10) return 0.01;
-      if (price < 50) return 0.05;
-      if (price < 100) return 0.1;
-      if (price < 500) return 0.5;
-      if (price < 1000) return 1.0;
-      return 5.0;
+    // 計算殖利率 (%)
+    function getYield(stock) {
+      return (stock.dividend / stock.price) * 100;
     }
 
-    function formatClock(date = new Date()) {
-      return date.toTimeString().split(' ')[0];
+    // 判斷是否為「低價＋高殖利率」精選 (股價 < 50 且 殖利率 >= 5%)
+    function isLowPriceHighYield(stock) {
+      return stock.price < 50 && getYield(stock) >= 5.0;
     }
 
-    function formatHM(date = new Date()) {
-      return date.toTimeString().slice(0, 5);
+    // 計算智慧優先分數：低股價 + 高殖利率(>=5%) 權重最高
+    function getSmartScore(stock) {
+      const yld = getYield(stock);
+      const yieldBonus = yld >= 5 ? yld * 12 : yld * 2;
+      const lowPriceBonus = stock.price < 25 ? 65 : (stock.price < 50 ? 45 : (stock.price < 100 ? 15 : 0));
+      const aiBonus = stock.aiPredPct > 0 ? stock.aiPredPct * 1.5 : 0;
+      return yieldBonus + lowPriceBonus + aiBonus;
     }
 
-    // --- Real-Time Price Tick Engine ---
-    function simulateMarketTick() {
-      const nowStr = formatClock();
-      document.getElementById('last-update-clock').textContent = nowStr;
-      lastFlashed = {};
+    // 判斷進出場訊號
+    function getSignal(stock) {
+      if (stock.aiPredPct >= 7.5 && stock.price <= stock.buyHigh * 1.01) {
+        return { label: "🟢 強力進場", cls: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" };
+      } else if (stock.aiPredPct >= 4.0 && stock.price <= stock.buyHigh * 1.03) {
+        return { label: "🟡 分批布局", cls: "bg-amber-500/20 text-amber-300 border border-amber-500/40" };
+      } else if (stock.aiPredPct < 0 || stock.price >= stock.sellLow) {
+        return { label: "🔴 逢高賣出", cls: "bg-rose-500/20 text-rose-300 border border-rose-500/40" };
+      } else {
+        return { label: "⚪ 續抱觀望", cls: "bg-slate-800 text-slate-300 border border-slate-700" };
+      }
+    }
 
-      // Randomly update 5 to 8 stocks per tick
-      const indices = [...Array(assets.length).keys()].sort(() => Math.random() - 0.5).slice(0, 7);
-      indices.forEach(idx => {
-        const item = assets[idx];
-        const tick = getTwTickSize(item.price);
-        const dir = Math.random() > 0.46 ? 1 : -1; // Slight bullish bias
-        const steps = Math.random() > 0.75 ? 2 : 1;
-        let newPrice = +(item.price + dir * steps * tick).toFixed(2);
-        // Keep within +/- 9.5% of prevClose
-        const maxP = item.prevClose * 1.095;
-        const minP = item.prevClose * 0.905;
-        if (newPrice > maxP) newPrice = +(item.price - tick).toFixed(2);
-        if (newPrice < minP) newPrice = +(item.price + tick).toFixed(2);
+    // 渲染表格
+    function renderTable(flashedCodes = {}) {
+      let filtered = stocksData.filter(s => {
+        const q = searchQuery.trim().toLowerCase();
+        if (q && !s.code.toLowerCase().includes(q) && !s.name.toLowerCase().includes(q)) {
+          return false;
+        }
+        const yld = getYield(s);
+        if (currentFilter === "gem") return isLowPriceHighYield(s);
+        if (currentFilter === "yield5") return yld >= 5.0;
+        if (currentFilter === "etf") return s.type === "ETF";
+        if (currentFilter === "stock") return s.type === "STOCK";
+        if (currentFilter === "buy") {
+          const sig = getSignal(s).label;
+          return sig.includes("進場") || sig.includes("布局");
+        }
+        return true;
+      });
 
-        if (newPrice !== item.price) {
-          lastFlashed[item.code] = newPrice > item.price ? 'UP' : 'DOWN';
-          item.price = newPrice;
-          item.yieldRate = +((item.dividend / item.price) * 100).toFixed(2);
-          item.history[item.history.length - 1] = newPrice;
+      // 排序
+      filtered.sort((a, b) => {
+        if (currentSort === "smart") return getSmartScore(b) - getSmartScore(a);
+        if (currentSort === "yield") return getYield(b) - getYield(a);
+        if (currentSort === "priceAsc") return a.price - b.price;
+        if (currentSort === "aiUpside") return b.aiPredPct - a.aiPredPct;
+        return 0;
+      });
 
-          // Dynamically adjust AI signal based on entry/exit thresholds
-          if (item.price >= item.exitTarget * 0.985) {
-            item.signal = 'SELL';
-          } else if (item.price <= item.entryHigh && item.pred30dPct > 3) {
-            item.signal = 'BUY';
-          } else if (item.pred30dPct < 0) {
-            item.signal = 'SELL';
-          } else {
-            item.signal = 'HOLD';
+      document.getElementById("result-count").textContent = `(共 ${filtered.length} 檔)`;
+      const tbody = document.getElementById("stock-table-body");
+      tbody.innerHTML = "";
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">找不到符合條件的股票或 ETF，請嘗試清除搜尋關鍵字或切換篩選條件。</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(stock => {
+        const diff = stock.price - stock.prevClose;
+        const diffPct = (diff / stock.prevClose) * 100;
+        const yld = getYield(stock);
+        const gem = isLowPriceHighYield(stock);
+        const signal = getSignal(stock);
+        const isSelected = stock.code === selectedCode;
+        const flashClass = flashedCodes[stock.code] === "up" ? "flash-up" : (flashedCodes[stock.code] === "down" ? "flash-down" : "");
+
+        const priceColor = diff > 0.001 ? "tw-up" : (diff < -0.001 ? "tw-down" : "tw-flat");
+        const arrow = diff > 0.001 ? "▲" : (diff < -0.001 ? "▼" : "―");
+        const aiColor = stock.aiPredPct >= 0 ? "tw-up" : "tw-down";
+        const aiSign = stock.aiPredPct >= 0 ? "+" : "";
+
+        const tr = document.createElement("tr");
+        tr.className = `cursor-pointer transition hover:bg-slate-800/60 ${isSelected ? "bg-slate-800/90" : ""} ${flashClass}`;
+        tr.onclick = () => selectStock(stock.code);
+
+        tr.innerHTML = `
+          <td class="py-3 px-3">
+            <div class="flex items-center gap-2">
+              <span class="font-mono text-xs font-bold px-1.5 py-0.5 rounded ${stock.type === 'ETF' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-slate-800 text-slate-300'}">${stock.code}</span>
+              <span class="font-semibold text-white">${stock.name}</span>
+              ${gem ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 whitespace-nowrap">💎低價高息</span>' : ''}
+            </div>
+          </td>
+          <td class="py-3 px-3 text-right font-mono font-bold ${priceColor}">
+            ${stock.price.toFixed(2)}
+          </td>
+          <td class="py-3 px-3 text-right font-mono text-xs ${priceColor}">
+            ${arrow} ${Math.abs(diff).toFixed(2)} (${diffPct >= 0 ? "+" : ""}${diffPct.toFixed(2)}%)
+          </td>
+          <td class="py-3 px-3 text-right">
+            <div class="font-mono text-xs text-slate-200">${stock.dividend.toFixed(2)} 元</div>
+            <div class="font-mono text-xs font-bold ${yld >= 5 ? 'text-amber-400' : 'text-slate-400'}">${yld.toFixed(2)}%</div>
+          </td>
+          <td class="py-3 px-3 text-right font-mono font-bold ${aiColor}">
+            ${aiSign}${stock.aiPredPct.toFixed(1)}%
+          </td>
+          <td class="py-3 px-3 text-center">
+            <span class="text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${signal.cls}">
+              ${signal.label}
+            </span>
+          </td>
+          <td class="py-3 px-3 text-right font-mono text-xs">
+            <div class="text-emerald-400">買: ${stock.buyLow.toFixed(1)}~${stock.buyHigh.toFixed(1)}</div>
+            <div class="text-rose-400">賣: ${stock.sellLow.toFixed(1)}~${stock.sellHigh.toFixed(1)}</div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // 選擇個股並更新圖表與詳情
+    function selectStock(code) {
+      selectedCode = code;
+      const stock = stocksData.find(s => s.code === code) || stocksData[0];
+      const yld = getYield(stock);
+      const gem = isLowPriceHighYield(stock);
+
+      document.getElementById("detail-code").textContent = stock.code;
+      document.getElementById("detail-name").textContent = stock.name;
+      const badge = document.getElementById("detail-badge");
+      if (gem) {
+        badge.textContent = "💎 低價高息精選 (<50元 & ≥5%)";
+        badge.className = "text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30";
+      } else if (yld >= 5) {
+        badge.textContent = "🔥 高殖利率 ≥ 5%";
+        badge.className = "text-xs px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30";
+      } else {
+        badge.textContent = stock.type === "ETF" ? "📊 台灣 ETF" : "🏢 上市櫃權值/成長股";
+        badge.className = "text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700";
+      }
+
+      document.getElementById("detail-strategy").textContent =
+        `AI 策略分析：${stock.note} 未來 30 日預期報酬 ${stock.aiPredPct >= 0 ? "+" : ""}${stock.aiPredPct.toFixed(1)}%。`;
+      document.getElementById("detail-buy-zone").textContent = `${stock.buyLow.toFixed(2)} - ${stock.buyHigh.toFixed(2)}`;
+      document.getElementById("detail-sell-zone").textContent = `${stock.sellLow.toFixed(2)} - ${stock.sellHigh.toFixed(2)}`;
+      document.getElementById("detail-div-info").textContent = `${stock.dividend.toFixed(2)}元 (${yld.toFixed(2)}%)`;
+
+      updateChart(stock);
+      renderTable();
+    }
+
+    // 更新 Chart.js 雙線走勢圖（過去15日實際 + 未來15日AI預測）
+    function updateChart(stock) {
+      const ctx = document.getElementById("forecastChart").getContext("2d");
+      const labels = [];
+      const historyData = [];
+      const forecastData = [];
+
+      // 產生過去 14 天模擬走勢直到今日價格
+      let p = stock.price * (1 - (stock.aiPredPct > 0 ? 0.03 : -0.02));
+      for (let i = -14; i <= 0; i++) {
+        labels.push(i === 0 ? "今日" : `${i}日`);
+        if (i === 0) {
+          historyData.push(Number(stock.price.toFixed(2)));
+        } else {
+          p = p + (stock.price - p) * 0.22 + (Math.random() - 0.48) * stock.price * 0.008;
+          historyData.push(Number(p.toFixed(2)));
+        }
+        forecastData.push(i === 0 ? Number(stock.price.toFixed(2)) : null);
+      }
+
+      // 產生未來 15 天 AI 預測路徑
+      const targetPrice = stock.price * (1 + stock.aiPredPct / 100);
+      let fp = stock.price;
+      for (let d = 1; d <= 15; d++) {
+        labels.push(`+${d}日`);
+        historyData.push(null);
+        fp = fp + (targetPrice - fp) * 0.16 + (Math.random() - 0.48) * stock.price * 0.005;
+        forecastData.push(Number(fp.toFixed(2)));
+      }
+
+      if (forecastChart) {
+        forecastChart.destroy();
+      }
+
+      forecastChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: "歷史成交走勢",
+              data: historyData,
+              borderColor: "#38bdf8",
+              backgroundColor: "rgba(56, 189, 248, 0.12)",
+              borderWidth: 2,
+              pointRadius: 2,
+              tension: 0.3,
+              fill: true
+            },
+            {
+              label: "AI 未來預測路徑",
+              data: forecastData,
+              borderColor: stock.aiPredPct >= 0 ? "#f43f5e" : "#10b981",
+              borderDash: [5, 5],
+              borderWidth: 2.5,
+              pointRadius: 2.5,
+              tension: 0.3,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          plugins: {
+            legend: {
+              labels: { color: "#cbd5e1", font: { size: 11 } }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#64748b", font: { size: 10 } },
+              grid: { color: "rgba(51, 65, 85, 0.3)" }
+            },
+            y: {
+              ticks: { color: "#94a3b8", font: { size: 11 } },
+              grid: { color: "rgba(51, 65, 85, 0.3)" }
+            }
           }
         }
       });
-
-      renderAll();
     }
 
-    // --- Real-Time News Push Engine ---
-    function pushLiveNews() {
-      if (!isLive) return;
-      const tpl = INCOMING_NEWS_TEMPLATES[newsTemplateIdx % INCOMING_NEWS_TEMPLATES.length];
-      newsTemplateIdx++;
-
-      // Mark older news as not brand-new
-      NEWS_FEED.forEach(n => n.isNew = false);
-
-      const newEntry = {
-        id: Date.now(),
-        time: formatHM(),
-        isNew: true,
-        sentiment: tpl.sentiment,
-        category: tpl.category,
-        codes: tpl.codes,
-        source: tpl.source,
-        title: tpl.title,
-        impact: tpl.impact
-      };
-
-      NEWS_FEED.unshift(newEntry);
-      if (NEWS_FEED.length > 25) NEWS_FEED.pop();
-
-      tickerIdx = 0;
-      renderTicker();
-      renderNewsFeed();
-      renderDetailPanel();
-      updateKPIs();
-    }
-
-    // --- UI Controls ---
-    function toggleLive() {
-      isLive = !isLive;
-      const btn = document.getElementById('toggle-live-btn');
-      const dot = document.getElementById('live-dot');
-      const status = document.getElementById('live-status');
-      if (isLive) {
-        btn.innerHTML = '<i data-lucide="pause" class="w-3.5 h-3.5"></i><span>暫停更新</span>';
-        dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
-        status.textContent = '即時連線中 (4s)';
-      } else {
-        btn.innerHTML = '<i data-lucide="play" class="w-3.5 h-3.5"></i><span>繼續更新</span>';
-        dot.className = 'w-2 h-2 rounded-full bg-amber-400';
-        status.textContent = '已暫停跳動';
-      }
-      lucide.createIcons();
-    }
-
-    function manualTick() {
-      simulateMarketTick();
-      pushLiveNews();
-    }
-
-    function clearSearch() {
-      document.getElementById('search-input').value = '';
-      renderAll();
-    }
-
-    function setCategory(cat) {
-      categoryFilter = cat;
-      ['ALL', 'ETF', 'STOCK'].forEach(c => {
-        const el = document.getElementById(`cat-${c}`);
-        el.className = c === cat
-          ? 'cat-btn px-3 py-1.5 rounded-md text-xs font-bold bg-indigo-600 text-white transition'
-          : 'cat-btn px-3 py-1.5 rounded-md text-xs font-bold text-slate-400 hover:text-white transition';
-      });
-      renderAll();
-    }
-
-    function toggleQuickFilter(qf) {
-      if (quickFilters.has(qf)) quickFilters.delete(qf);
-      else quickFilters.add(qf);
-
-      document.querySelectorAll('.qf-btn').forEach(btn => {
-        const id = btn.id.replace('qf-', '');
-        if (quickFilters.has(id)) {
-          btn.classList.add('border-indigo-500', 'bg-indigo-600/25', 'text-white');
-        } else {
-          btn.classList.remove('border-indigo-500', 'bg-indigo-600/25', 'text-white');
-        }
-      });
-      renderAll();
-    }
-
-    function setNewsFilter(nf) {
-      newsFilter = nf;
-      ['ALL', 'BULLISH', 'BEARISH', 'DIVIDEND', 'SELECTED'].forEach(f => {
-        const el = document.getElementById(`nf-${f}`);
-        el.className = f === nf
-          ? 'nf-btn px-2.5 py-1.5 rounded-lg font-semibold bg-indigo-600 text-white'
-          : 'nf-btn px-2.5 py-1.5 rounded-lg font-semibold bg-slate-800 text-slate-300 hover:text-white';
-      });
-      renderNewsFeed();
-    }
-
-    function selectAsset(code, scrollToTop = false) {
-      selectedCode = code;
-      renderTable();
-      renderDetailPanel();
-      if (newsFilter === 'SELECTED') renderNewsFeed();
-      if (scrollToTop) {
-        document.getElementById('detail-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-    }
-
-    function updateCalcLots(val) {
-      calcLots = Math.max(1, parseInt(val) || 1);
-      renderDetailPanel();
-    }
-
-    // --- Filtering & Smart Priority Sorting ---
-    function getFilteredAndSortedAssets() {
-      const q = document.getElementById('search-input').value.trim().toLowerCase();
-      const sortMode = document.getElementById('sort-select').value;
-
-      let list = assets.filter(item => {
-        if (categoryFilter !== 'ALL' && item.type !== categoryFilter) return false;
-        if (q && !(item.code.toLowerCase().includes(q) || item.name.toLowerCase().includes(q) || item.sector.toLowerCase().includes(q))) {
-          return false;
-        }
-        if (quickFilters.has('YIELD_5_PLUS') && item.yieldRate < 5) return false;
-        if (quickFilters.has('SUPER_YIELD') && item.yieldRate < 20) return false;
-        if (quickFilters.has('LOW_PRICE_HIGH_YIELD') && !(item.price < 40 && item.yieldRate >= 8)) return false;
-        if (quickFilters.has('BUY_NOW') && item.signal !== 'BUY') return false;
-        if (quickFilters.has('SELL_SOON') && item.signal !== 'SELL') return false;
-        return true;
-      });
-
-      list.sort((a, b) => {
-        if (sortMode === 'YIELD_DESC') return b.yieldRate - a.yieldRate;
-        if (sortMode === 'PRICE_ASC') return a.price - b.price;
-        if (sortMode === 'UPSIDE_DESC') return b.pred30dPct - a.pred30dPct;
-        if (sortMode === 'CHANGE_DESC') {
-          const chgA = (a.price - a.prevClose) / a.prevClose;
-          const chgB = (b.price - b.prevClose) / b.prevClose;
-          return chgB - chgA;
-        }
-        // SMART Priority:
-        // Tier 1: Yield >= 20%
-        // Tier 2: Low Price (< 40 NTD) & Good Dividend (Yield >= 8%)
-        // Tier 3: Other High Yield (>= 7%)
-        // Tier 4: Rest by Yield
-        const tier = (x) => {
-          if (x.yieldRate >= 20) return 1; // 超高息置頂
-          if (x.yieldRate >= 5 && x.price < 40) return 2; // 殖利率 ≥5% 且低價股優先
-          if (x.yieldRate >= 5) return 3; // 其餘現金殖利率 ≥5% 標的優先展示
-          return 4; // 殖利率 <5% 成長股排在後方
+    // 初始化與推播即時新聞
+    function initNews() {
+      const now = new Date();
+      liveNewsList = newsTemplates.slice(0, 6).map((item, idx) => {
+        const t = new Date(now.getTime() - idx * 7 * 60000);
+        return {
+          ...item,
+          time: t.toTimeString().slice(0, 5)
         };
-        const tA = tier(a), tB = tier(b);
-        if (tA !== tB) return tA - tB;
-        return b.yieldRate - a.yieldRate;
+      });
+      renderNews();
+    }
+
+    function pushNewHeadline() {
+      const randomItem = newsTemplates[Math.floor(Math.random() * newsTemplates.length)];
+      const nowStr = new Date().toTimeString().slice(0, 5);
+      liveNewsList.unshift({
+        ...randomItem,
+        time: nowStr,
+        isNew: true
+      });
+      if (liveNewsList.length > 15) liveNewsList.pop();
+      document.getElementById("news-update-time").textContent = `最新推播 ${nowStr}`;
+      renderNews();
+    }
+
+    function renderNews() {
+      const container = document.getElementById("news-feed");
+      container.innerHTML = "";
+      liveNewsList.forEach(news => {
+        const div = document.createElement("div");
+        div.className = "p-3 rounded-lg bg-slate-950/90 border border-slate-800 hover:border-slate-700 transition";
+        div.innerHTML = `
+          <div class="flex items-center justify-between gap-2 mb-1.5">
+            <div class="flex items-center gap-1.5">
+              <button onclick="quickSearchStock('${news.tag}')" class="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-mono text-xs font-bold transition">
+                #${news.tag}
+              </button>
+              <span class="text-[11px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">${news.category}</span>
+              ${news.isNew ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300">NEW</span>' : ''}
+            </div>
+            <span class="text-[11px] font-mono text-slate-500">${news.time}</span>
+          </div>
+          <p class="text-xs text-slate-200 leading-relaxed">${news.title}</p>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    window.quickSearchStock = function(code) {
+      document.getElementById("search-input").value = code;
+      searchQuery = code;
+      currentFilter = "all";
+      updateFilterButtons();
+      selectStock(code);
+    };
+
+    // 模擬即時行情跳動
+    function simulateMarketTick() {
+      const flashed = {};
+      // 更新大盤指數
+      const taiexEl = document.getElementById("taiex-price");
+      const curTaiex = parseFloat(taiexEl.textContent.replace(/,/g, ""));
+      const newTaiex = curTaiex + (Math.random() - 0.48) * 18;
+      const taiexDiff = newTaiex - 22703.25;
+      const taiexPct = (taiexDiff / 22703.25) * 100;
+      taiexEl.textContent = newTaiex.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const taiexChangeEl = document.getElementById("taiex-change");
+      taiexChangeEl.textContent = `${taiexDiff >= 0 ? "▲ +" : "▼ "}${taiexDiff.toFixed(2)} (${taiexPct >= 0 ? "+" : ""}${taiexPct.toFixed(2)}%)`;
+      taiexChangeEl.className = `text-xs ${taiexDiff >= 0 ? "tw-up" : "tw-down"}`;
+
+      // 隨機跳動 5~8 檔個股價格與 AI 預測微調
+      stocksData.forEach(s => {
+        if (Math.random() < 0.45) {
+          const oldPrice = s.price;
+          const step = s.price * (Math.random() - 0.49) * 0.006;
+          s.price = Math.max(1, Number((s.price + step).toFixed(2)));
+          s.aiPredPct = Number((s.aiPredPct + (Math.random() - 0.5) * 0.3).toFixed(1));
+          if (s.price > oldPrice) flashed[s.code] = "up";
+          else if (s.price < oldPrice) flashed[s.code] = "down";
+        }
       });
 
-      return list;
+      renderTable(flashed);
     }
 
-    // --- Render KPIs ---
-    function updateKPIs() {
-      const superYieldCount = assets.filter(x => x.yieldRate >= 20).length;
-      const yield5Count = assets.filter(x => x.yieldRate >= 5).length;
-      const buyCount = assets.filter(x => x.signal === 'BUY').length;
-      document.getElementById('kpi-super-yield').textContent = `${superYieldCount} 檔`;
-      document.getElementById('kpi-yield-5').textContent = `${yield5Count} 檔`;
-      document.getElementById('kpi-buy-signal').textContent = `${buyCount} 檔`;
-      document.getElementById('kpi-news-count').textContent = `${NEWS_FEED.length} 則`;
-    }
-
-    // --- Render Ticker ---
-    function renderTicker() {
-      if (!NEWS_FEED.length) return;
-      const item = NEWS_FEED[tickerIdx % NEWS_FEED.length];
-      const sentBadge = item.sentiment === 'BULLISH'
-        ? '<span class="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-400 font-bold text-[10px]">利多</span>'
-        : '<span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">利空</span>';
-      const codeChips = item.codes.map(c =>
-        `<button onclick="selectAsset('${c}', true)" class="px-1.5 py-0.5 rounded bg-indigo-500/25 hover:bg-indigo-500/40 text-indigo-300 font-mono-num text-[11px] font-bold transition">#${c}</button>`
-      ).join('');
-
-      document.getElementById('ticker-content').innerHTML = `
-        ${sentBadge}
-        <span class="truncate">${item.title}</span>
-        <div class="hidden md:flex items-center gap-1 shrink-0">${codeChips}</div>
-      `;
-      document.getElementById('ticker-time').textContent = `${item.time} • ${item.source}`;
-    }
-
-    function nextTicker() {
-      tickerIdx = (tickerIdx + 1) % NEWS_FEED.length;
-      renderTicker();
-    }
-
-    // --- Render Main Table (Taiwan Red=Up, Green=Down) ---
-    function renderTable() {
-      const list = getFilteredAndSortedAssets();
-      document.getElementById('list-count-badge').textContent = `${list.length} 檔`;
-      const tbody = document.getElementById('stock-table-body');
-
-      if (!list.length) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-slate-400">找不到符合條件的股票或 ETF，請嘗試清除搜尋或篩選條件。</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = list.map(item => {
-        const diff = item.price - item.prevClose;
-        const pct = (diff / item.prevClose) * 100;
-        const isUp = diff > 0;
-        const isDown = diff < 0;
-        // Taiwan Convention: Red = Up, Green = Down
-        const priceColor = isUp ? 'text-rose-400' : isDown ? 'text-emerald-400' : 'text-slate-200';
-        const sign = isUp ? '+' : '';
-        const isSelected = item.code === selectedCode;
-        const flashClass = lastFlashed[item.code] === 'UP' ? 'flash-up' : lastFlashed[item.code] === 'DOWN' ? 'flash-down' : '';
-
-        // Badges
-        const typeBadge = item.type === 'ETF'
-          ? '<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-sky-500/15 text-sky-400 border border-sky-500/30">ETF</span>'
-          : '<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-purple-500/15 text-purple-400 border border-purple-500/30">個股</span>';
-
-        const superYieldBadge = item.yieldRate >= 20
-          ? '<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">🔥≥20%超高息</span>'
-          : (item.yieldRate >= 5 && item.price < 40)
-          ? '<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">💰≥5%低價高息</span>'
-          : (item.yieldRate >= 5)
-          ? '<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">💰≥5%高息</span>'
-          : '';
-
-        const predColor = item.pred30dPct >= 0 ? 'text-rose-400' : 'text-emerald-400';
-        const predTargetPrice = (item.price * (1 + item.pred30dPct / 100)).toFixed(2);
-
-        const signalBadge = item.signal === 'BUY'
-          ? '<span class="inline-block px-2 py-1 rounded-md text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">適合進場</span>'
-          : item.signal === 'SELL'
-          ? '<span class="inline-block px-2 py-1 rounded-md text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">建議賣出</span>'
-          : '<span class="inline-block px-2 py-1 rounded-md text-[11px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">續抱觀望</span>';
-
-        return `
-          <tr onclick="selectAsset('${item.code}')" class="cursor-pointer transition hover:bg-slate-800/70 ${isSelected ? 'bg-indigo-950/45 border-l-2 border-l-indigo-500' : ''} ${flashClass}">
-            <td class="py-3 px-3">
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <span class="font-mono-num font-bold text-white text-sm">${item.code}</span>
-                <span class="font-bold text-slate-200">${item.name}</span>
-                ${typeBadge}
-              </div>
-              <div class="flex items-center gap-1.5 mt-1 flex-wrap">
-                <span class="text-[11px] text-slate-400">${item.sector}</span>
-                ${superYieldBadge}
-              </div>
-            </td>
-            <td class="py-3 px-2 text-right font-mono-num">
-              <div class="font-bold text-sm ${priceColor}">${item.price.toFixed(2)}</div>
-              <div class="text-[11px] ${priceColor}">${sign}${diff.toFixed(2)} (${sign}${pct.toFixed(2)}%)</div>
-            </td>
-            <td class="py-3 px-2 text-right font-mono-num">
-              <div class="font-bold ${item.yieldRate >= 20 ? 'text-rose-400 text-sm' : item.yieldRate >= 5 ? 'text-amber-300' : 'text-slate-400'}">${item.yieldRate.toFixed(2)}%</div>
-              <div class="text-[11px] text-slate-400">配息 $${item.dividend.toFixed(2)}</div>
-            </td>
-            <td class="py-3 px-2 text-right font-mono-num">
-              <div class="font-bold ${predColor}">${item.pred30dPct >= 0 ? '+' : ''}${item.pred30dPct.toFixed(1)}%</div>
-              <div class="text-[11px] text-slate-400">目標 ${predTargetPrice}</div>
-            </td>
-            <td class="py-3 px-3 text-center">
-              ${signalBadge}
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
-
-    // --- Build SVG Forecast Chart ---
-    function buildForecastSvg(item) {
-      const hist = item.history; // 10 points
-      const targetPrice = +(item.price * (1 + item.pred30dPct / 100)).toFixed(2);
-      const midPrice = +((item.price + targetPrice) / 2).toFixed(2);
-      const forecast = [item.price, midPrice, targetPrice];
-      const upperBand = [item.price, +(midPrice * 1.025).toFixed(2), +(targetPrice * 1.045).toFixed(2)];
-      const lowerBand = [item.price, +(midPrice * 0.975).toFixed(2), +(targetPrice * 0.955).toFixed(2)];
-
-      const allVals = [...hist, ...upperBand, ...lowerBand];
-      const minV = Math.min(...allVals) * 0.992;
-      const maxV = Math.max(...allVals) * 1.008;
-      const range = maxV - minV || 1;
-
-      const W = 420, H = 145, padX = 16, padY = 18;
-      const totalPts = hist.length + 2; // 12 steps (0..9 hist, 9..11 forecast)
-      const getX = (i) => padX + (i / (totalPts - 1)) * (W - padX * 2);
-      const getY = (v) => H - padY - ((v - minV) / range) * (H - padY * 2);
-
-      const histPoints = hist.map((v, i) => `${getX(i).toFixed(1)},${getY(v).toFixed(1)}`).join(' ');
-      const fStartIdx = hist.length - 1;
-      const forecastPoints = forecast.map((v, i) => `${getX(fStartIdx + i).toFixed(1)},${getY(v).toFixed(1)}`).join(' ');
-
-      const bandPoly = [
-        ...upperBand.map((v, i) => `${getX(fStartIdx + i).toFixed(1)},${getY(v).toFixed(1)}`),
-        ...lowerBand.slice().reverse().map((v, i) => `${getX(fStartIdx + (2 - i)).toFixed(1)},${getY(v).toFixed(1)}`)
-      ].join(' ');
-
-      const isBull = item.pred30dPct >= 0;
-      const fColor = isBull ? '#fb7185' : '#34d399';
-      const bandFill = isBull ? 'rgba(244, 63, 94, 0.16)' : 'rgba(16, 185, 129, 0.16)';
-
-      return `
-        <svg viewBox="0 0 ${W} ${H}" class="w-full h-36 bg-slate-950/90 rounded-lg border border-slate-800/80">
-          <!-- Divider between History & AI Forecast -->
-          <line x1="${getX(fStartIdx)}" y1="8" x2="${getX(fStartIdx)}" y2="${H - 8}" stroke="#334155" stroke-dasharray="3,3" />
-          <text x="${getX(fStartIdx) - 6}" y="14" text-anchor="end" fill="#64748b" font-size="9">近10日走勢</text>
-          <text x="${getX(fStartIdx) + 6}" y="14" text-anchor="start" fill="${fColor}" font-size="9" font-weight="bold">AI 未來30日預測區間</text>
-
-          <!-- Confidence Band -->
-          <polygon points="${bandPoly}" fill="${bandFill}" />
-
-          <!-- History Line -->
-          <polyline fill="none" stroke="#60a5fa" stroke-width="2.2" points="${histPoints}" />
-
-          <!-- Forecast Line -->
-          <polyline fill="none" stroke="${fColor}" stroke-width="2.4" stroke-dasharray="4,3" points="${forecastPoints}" />
-
-          <!-- Current Dot -->
-          <circle cx="${getX(fStartIdx)}" cy="${getY(item.price)}" r="4" fill="#fbbf24" />
-          <!-- Target Dot -->
-          <circle cx="${getX(totalPts - 1)}" cy="${getY(targetPrice)}" r="4" fill="${fColor}" />
-          <text x="${getX(totalPts - 1) - 4}" y="${getY(targetPrice) - 7}" text-anchor="end" fill="${fColor}" font-size="10" font-weight="bold">${targetPrice}</text>
-        </svg>
-      `;
-    }
-
-    // --- Render Right AI Diagnosis & Calculator Panel ---
-    function renderDetailPanel() {
-      const item = assets.find(x => x.code === selectedCode) || assets[0];
-      const diff = item.price - item.prevClose;
-      const pct = (diff / item.prevClose) * 100;
-      const isUp = diff >= 0;
-      const priceColor = isUp ? 'text-rose-400' : 'text-emerald-400';
-      const targetPrice = +(item.price * (1 + item.pred30dPct / 100)).toFixed(2);
-
-      // Calculator math (1 張 = 1,000 shares)
-      const shares = calcLots * 1000;
-      const totalCost = Math.round(item.price * shares);
-      const estAnnualDiv = Math.round(item.dividend * shares);
-      const estCapGain = Math.round((targetPrice - item.price) * shares);
-      const estTotalReturn = estAnnualDiv + estCapGain;
-
-      // Related News for this stock
-      const relatedNews = NEWS_FEED.filter(n => n.codes.includes(item.code)).slice(0, 2);
-      const newsHtml = relatedNews.length
-        ? relatedNews.map(n => `
-            <div class="p-2.5 rounded-lg bg-slate-950/90 border border-slate-800 space-y-1">
-              <div class="flex items-center justify-between text-[11px]">
-                <span class="${n.sentiment === 'BULLISH' ? 'text-rose-400' : 'text-emerald-400'} font-bold">${n.sentiment === 'BULLISH' ? '🔴 利多題材' : '🟢 利空警示'} • ${n.source}</span>
-                <span class="text-slate-500 font-mono-num">${n.time}</span>
-              </div>
-              <div class="text-xs text-slate-200 font-medium leading-snug">${n.title}</div>
-              <div class="text-[11px] text-indigo-300">${n.impact}</div>
-            </div>
-          `).join('')
-        : `<div class="text-xs text-slate-500 py-2">暫無該標的專屬即時突發新聞，整體走勢隨大盤與類股輪動。</div>`;
-
-      document.getElementById('detail-panel').innerHTML = `
-        <!-- Header -->
-        <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-3">
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="font-mono-num text-lg font-black text-white">${item.code}</span>
-              <span class="text-lg font-bold text-white">${item.name}</span>
-              <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-800 text-slate-300">${item.type}</span>
-            </div>
-            <p class="text-xs text-slate-400 mt-0.5">${item.sector} • 預估年配息 $${item.dividend.toFixed(2)} 元 (殖利率 ${item.yieldRate.toFixed(2)}%)</p>
-          </div>
-          <div class="text-right font-mono-num">
-            <div class="text-xl font-black ${priceColor}">${item.price.toFixed(2)}</div>
-            <div class="text-xs font-bold ${priceColor}">${isUp ? '+' : ''}${diff.toFixed(2)} (${isUp ? '+' : ''}${pct.toFixed(2)}%)</div>
-          </div>
-        </div>
-
-        <!-- Entry & Exit Action Boxes -->
-        <div class="grid grid-cols-2 gap-2.5">
-          <div class="bg-emerald-950/30 border border-emerald-500/30 rounded-lg p-3">
-            <div class="text-[11px] text-emerald-400 font-bold flex items-center gap-1">
-              <i data-lucide="arrow-down-circle" class="w-3.5 h-3.5"></i> 適合進場買進區間
-            </div>
-            <div class="font-mono-num text-base font-black text-white mt-1">${item.entryLow.toFixed(2)} ~ ${item.entryHigh.toFixed(2)}</div>
-            <div class="text-[11px] text-slate-400 mt-0.5">回測支撐區分批承接</div>
-          </div>
-          <div class="bg-rose-950/30 border border-rose-500/30 rounded-lg p-3">
-            <div class="text-[11px] text-rose-400 font-bold flex items-center gap-1">
-              <i data-lucide="arrow-up-circle" class="w-3.5 h-3.5"></i> 適合賣出停利目標
-            </div>
-            <div class="font-mono-num text-base font-black text-white mt-1">${item.exitTarget.toFixed(2)} 元以上</div>
-            <div class="text-[11px] text-slate-400 mt-0.5">達標可分批獲利了結</div>
-          </div>
-        </div>
-
-        <!-- AI Trend Chart -->
-        <div class="space-y-1.5">
-          <div class="flex items-center justify-between text-xs">
-            <span class="font-bold text-slate-200">AI 未來 30 日漲跌趨勢預測</span>
-            <span class="font-mono-num font-bold ${item.pred30dPct >= 0 ? 'text-rose-400' : 'text-emerald-400'}">
-              預估 ${item.pred30dPct >= 0 ? '+' : ''}${item.pred30dPct.toFixed(1)}% (目標價 ${targetPrice})
-            </span>
-          </div>
-          ${buildForecastSvg(item)}
-          <p class="text-xs text-slate-300 bg-slate-950/80 border border-slate-800 rounded-lg p-2.5 leading-relaxed">
-            <span class="text-amber-400 font-bold">AI 策略點評：</span>${item.reason}
-          </p>
-        </div>
-
-        <!-- Dividend & Capital Gain Calculator -->
-        <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-3 space-y-2.5">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-white flex items-center gap-1.5">
-              <i data-lucide="calculator" class="w-3.5 h-3.5 text-amber-400"></i> 存股股息與價差試算器
-            </span>
-            <div class="flex items-center gap-1.5 text-xs">
-              <span class="text-slate-400">買進張數：</span>
-              <input type="number" min="1" max="999" value="${calcLots}" onchange="updateCalcLots(this.value)" class="w-16 bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-right font-mono-num text-white font-bold outline-none focus:border-indigo-500" />
-              <span class="text-slate-400">張</span>
-            </div>
-          </div>
-          <div class="grid grid-cols-3 gap-2 text-center pt-1">
-            <div class="bg-slate-900 rounded p-2">
-              <div class="text-[10px] text-slate-400">預估投入成本</div>
-              <div class="font-mono-num text-xs font-bold text-slate-200 mt-0.5">$${totalCost.toLocaleString()}</div>
-            </div>
-            <div class="bg-slate-900 rounded p-2">
-              <div class="text-[10px] text-amber-400">預估年領股息</div>
-              <div class="font-mono-num text-xs font-bold text-amber-300 mt-0.5">$${estAnnualDiv.toLocaleString()}</div>
-            </div>
-            <div class="bg-slate-900 rounded p-2">
-              <div class="text-[10px] text-indigo-400">股息+30日價差</div>
-              <div class="font-mono-num text-xs font-bold ${estTotalReturn >= 0 ? 'text-rose-400' : 'text-emerald-400'} mt-0.5">
-                ${estTotalReturn >= 0 ? '+' : ''}$${estTotalReturn.toLocaleString()}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Stock-Specific Real-Time News -->
-        <div class="space-y-2">
-          <div class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-            <i data-lucide="zap" class="w-3.5 h-3.5 text-rose-400"></i> ${item.code} ${item.name} 專屬即時新聞催化劑
-          </div>
-          ${newsHtml}
-        </div>
-      `;
-      lucide.createIcons();
-    }
-
-    // --- Render News Feed Section ---
-    function renderNewsFeed() {
-      const filtered = NEWS_FEED.filter(n => {
-        if (newsFilter === 'BULLISH') return n.sentiment === 'BULLISH';
-        if (newsFilter === 'BEARISH') return n.sentiment === 'BEARISH';
-        if (newsFilter === 'DIVIDEND') return n.category === 'DIVIDEND';
-        if (newsFilter === 'SELECTED') return n.codes.includes(selectedCode);
-        return true;
+    function updateFilterButtons() {
+      document.querySelectorAll(".filter-btn").forEach(btn => {
+        if (btn.dataset.filter === currentFilter) {
+          btn.className = "filter-btn active px-3 py-1 rounded-full bg-amber-500 text-slate-950 font-semibold";
+        } else {
+          btn.className = "filter-btn px-3 py-1 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700";
+        }
       });
-
-      const container = document.getElementById('news-feed-list');
-      if (!filtered.length) {
-        container.innerHTML = `<div class="col-span-2 py-8 text-center text-xs text-slate-500">目前篩選條件下尚無即時新聞。</div>`;
-        return;
-      }
-
-      container.innerHTML = filtered.map(n => {
-        const isBull = n.sentiment === 'BULLISH';
-        const badge = isBull
-          ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">利多</span>'
-          : '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">利空</span>';
-        const newTag = n.isNew
-          ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-black bg-amber-500 text-slate-950 animate-pulse">NEW 剛剛</span>'
-          : '';
-        const tags = n.codes.map(c => {
-          const found = assets.find(a => a.code === c);
-          const label = found ? `#${c} ${found.name}` : `#${c}`;
-          return `<button onclick="selectAsset('${c}', true)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-indigo-600 text-indigo-300 hover:text-white text-[11px] font-semibold transition">${label}</button>`;
-        }).join('');
-
-        return `
-          <article class="bg-slate-950/90 border ${n.isNew ? 'border-amber-500/50' : 'border-slate-800'} rounded-xl p-3.5 flex flex-col justify-between gap-2.5 transition hover:border-slate-700">
-            <div class="space-y-1.5">
-              <div class="flex items-center justify-between gap-2">
-                <div class="flex items-center gap-1.5">
-                  ${newTag}
-                  ${badge}
-                  <span class="text-[11px] text-slate-400">${n.source}</span>
-                </div>
-                <span class="font-mono-num text-[11px] text-slate-500">${n.time}</span>
-              </div>
-              <h3 class="text-sm font-bold text-slate-100 leading-snug">${n.title}</h3>
-              <p class="text-xs text-slate-400">${n.impact}</p>
-            </div>
-            <div class="flex items-center gap-1.5 flex-wrap pt-1 border-t border-slate-800/70">
-              <span class="text-[10px] text-slate-500">關聯標的：</span>
-              ${tags}
-            </div>
-          </article>
-        `;
-      }).join('');
     }
 
-    function renderAll() {
-      updateKPIs();
+    // Event Listeners
+    document.getElementById("search-input").addEventListener("input", e => {
+      searchQuery = e.target.value;
       renderTable();
-      renderDetailPanel();
-      renderNewsFeed();
-      renderTicker();
-      lucide.createIcons();
-    }
+    });
 
-    // --- Boot & Timers ---
-    document.getElementById('last-update-clock').textContent = formatClock();
-    renderAll();
+    document.getElementById("sort-select").addEventListener("change", e => {
+      currentSort = e.target.value;
+      renderTable();
+    });
 
-    // Update stock prices every 4 seconds when live
+    document.querySelectorAll(".filter-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        currentFilter = btn.dataset.filter;
+        updateFilterButtons();
+        renderTable();
+      });
+    });
+
+    document.getElementById("toggle-live-btn").addEventListener("click", () => {
+      isLive = !isLive;
+      const btn = document.getElementById("toggle-live-btn");
+      const dot = document.getElementById("live-dot");
+      const status = document.getElementById("live-status");
+      if (isLive) {
+        btn.textContent = "暫停更新";
+        dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-ping";
+        status.textContent = "即時更新中 (3s)";
+      } else {
+        btn.textContent = "恢復更新";
+        dot.className = "w-2 h-2 rounded-full bg-slate-500";
+        status.textContent = "已暫停更新";
+      }
+    });
+
+    document.getElementById("refresh-now-btn").addEventListener("click", () => {
+      simulateMarketTick();
+      pushNewHeadline();
+    });
+
+    // 啟動初始化
+    initNews();
+    selectStock("00919");
+
     setInterval(() => {
       if (isLive) simulateMarketTick();
-    }, 4000);
+    }, 3000);
 
-    // Push real-time news every 6 seconds when live
     setInterval(() => {
-      if (isLive) pushLiveNews();
-    }, 6000);
-
-    // Rotate top breaking news ticker every 4.5 seconds
-    setInterval(() => {
-      nextTicker();
-    }, 4500);
+      if (isLive) pushNewHeadline();
+    }, 9000);
   </script>
 </body>
 </html>
