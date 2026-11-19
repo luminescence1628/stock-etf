@@ -72,7 +72,7 @@
             <h1 class="text-lg sm:text-xl font-black tracking-tight text-white">台股與ETF高息智能觀測站</h1>
             <span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold">AI 預測 + 即時新聞</span>
           </div>
-          <p class="text-xs text-slate-400">殖利率 ≥20% 置頂・銅板低價高息優先・紅漲綠跌即時看盤</p>
+          <p class="text-xs text-slate-400">現金殖利率 ≥5% 優先展示・≥20% 超高息置頂・銅板低價高息優先</p>
         </div>
       </div>
 
@@ -110,10 +110,10 @@
       </div>
       <div class="bg-slate-900 border border-amber-500/30 rounded-xl p-3.5">
         <div class="text-xs text-amber-400 font-semibold flex items-center gap-1.5">
-          <i data-lucide="coins" class="w-3.5 h-3.5"></i> 銅板低價高息 (&lt;40元)
+          <i data-lucide="coins" class="w-3.5 h-3.5"></i> 現金殖利率 ≥ 5% 精選
         </div>
-        <div id="kpi-low-price" class="text-2xl font-black text-white mt-1 font-mono-num">7 檔</div>
-        <div class="text-[11px] text-slate-400 mt-0.5">股價親民且殖利率 ≥ 8%</div>
+        <div id="kpi-yield-5" class="text-2xl font-black text-white mt-1 font-mono-num">15 檔</div>
+        <div class="text-[11px] text-slate-400 mt-0.5">已優先展示並標示高息徽章</div>
       </div>
       <div class="bg-slate-900 border border-emerald-500/30 rounded-xl p-3.5">
         <div class="text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
@@ -156,7 +156,7 @@
 
         <!-- Sort Select -->
         <select id="sort-select" onchange="renderAll()" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-semibold text-slate-200 outline-none focus:border-indigo-500">
-          <option value="SMART">⭐ 智能推薦 (≥20%殖利率 & 低價高息優先)</option>
+          <option value="SMART">⭐ 智能推薦 (現金殖利率 ≥5% & ≥20%超高息優先)</option>
           <option value="YIELD_DESC">💰 殖利率由高到低</option>
           <option value="PRICE_ASC">🪙 股價由低到高 (銅板股優先)</option>
           <option value="UPSIDE_DESC">🚀 AI 預測漲幅空間最高</option>
@@ -167,6 +167,7 @@
       <!-- Quick Tag Filters -->
       <div class="flex items-center gap-2 flex-wrap text-xs">
         <span class="text-slate-400">快速篩選：</span>
+        <button onclick="toggleQuickFilter('YIELD_5_PLUS')" id="qf-YIELD_5_PLUS" class="qf-btn px-2.5 py-1 rounded-full border border-amber-500/40 bg-amber-500/15 text-amber-300 hover:border-amber-400 transition">💰 現金殖利率 ≥ 5%</button>
         <button onclick="toggleQuickFilter('SUPER_YIELD')" id="qf-SUPER_YIELD" class="qf-btn px-2.5 py-1 rounded-full border border-slate-700 bg-slate-800/60 text-slate-300 hover:border-rose-500/50 transition">🔥 殖利率 ≥ 20%</button>
         <button onclick="toggleQuickFilter('LOW_PRICE_HIGH_YIELD')" id="qf-LOW_PRICE_HIGH_YIELD" class="qf-btn px-2.5 py-1 rounded-full border border-slate-700 bg-slate-800/60 text-slate-300 hover:border-amber-500/50 transition">🪙 低價高息 (&lt;40元且≥8%)</button>
         <button onclick="toggleQuickFilter('BUY_NOW')" id="qf-BUY_NOW" class="qf-btn px-2.5 py-1 rounded-full border border-slate-700 bg-slate-800/60 text-slate-300 hover:border-emerald-500/50 transition">🟢 適合進場買點</button>
@@ -486,6 +487,7 @@
         if (q && !(item.code.toLowerCase().includes(q) || item.name.toLowerCase().includes(q) || item.sector.toLowerCase().includes(q))) {
           return false;
         }
+        if (quickFilters.has('YIELD_5_PLUS') && item.yieldRate < 5) return false;
         if (quickFilters.has('SUPER_YIELD') && item.yieldRate < 20) return false;
         if (quickFilters.has('LOW_PRICE_HIGH_YIELD') && !(item.price < 40 && item.yieldRate >= 8)) return false;
         if (quickFilters.has('BUY_NOW') && item.signal !== 'BUY') return false;
@@ -508,10 +510,10 @@
         // Tier 3: Other High Yield (>= 7%)
         // Tier 4: Rest by Yield
         const tier = (x) => {
-          if (x.yieldRate >= 20) return 1;
-          if (x.price < 40 && x.yieldRate >= 8) return 2;
-          if (x.yieldRate >= 7) return 3;
-          return 4;
+          if (x.yieldRate >= 20) return 1; // 超高息置頂
+          if (x.yieldRate >= 5 && x.price < 40) return 2; // 殖利率 ≥5% 且低價股優先
+          if (x.yieldRate >= 5) return 3; // 其餘現金殖利率 ≥5% 標的優先展示
+          return 4; // 殖利率 <5% 成長股排在後方
         };
         const tA = tier(a), tB = tier(b);
         if (tA !== tB) return tA - tB;
@@ -524,10 +526,10 @@
     // --- Render KPIs ---
     function updateKPIs() {
       const superYieldCount = assets.filter(x => x.yieldRate >= 20).length;
-      const lowPriceCount = assets.filter(x => x.price < 40 && x.yieldRate >= 8).length;
+      const yield5Count = assets.filter(x => x.yieldRate >= 5).length;
       const buyCount = assets.filter(x => x.signal === 'BUY').length;
       document.getElementById('kpi-super-yield').textContent = `${superYieldCount} 檔`;
-      document.getElementById('kpi-low-price').textContent = `${lowPriceCount} 檔`;
+      document.getElementById('kpi-yield-5').textContent = `${yield5Count} 檔`;
       document.getElementById('kpi-buy-signal').textContent = `${buyCount} 檔`;
       document.getElementById('kpi-news-count').textContent = `${NEWS_FEED.length} 則`;
     }
@@ -585,8 +587,10 @@
 
         const superYieldBadge = item.yieldRate >= 20
           ? '<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">🔥≥20%超高息</span>'
-          : (item.price < 40 && item.yieldRate >= 8)
-          ? '<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">🪙低價高息</span>'
+          : (item.yieldRate >= 5 && item.price < 40)
+          ? '<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">💰≥5%低價高息</span>'
+          : (item.yieldRate >= 5)
+          ? '<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">💰≥5%高息</span>'
           : '';
 
         const predColor = item.pred30dPct >= 0 ? 'text-rose-400' : 'text-emerald-400';
@@ -616,7 +620,7 @@
               <div class="text-[11px] ${priceColor}">${sign}${diff.toFixed(2)} (${sign}${pct.toFixed(2)}%)</div>
             </td>
             <td class="py-3 px-2 text-right font-mono-num">
-              <div class="font-bold ${item.yieldRate >= 20 ? 'text-rose-400 text-sm' : item.yieldRate >= 8 ? 'text-amber-300' : 'text-slate-300'}">${item.yieldRate.toFixed(2)}%</div>
+              <div class="font-bold ${item.yieldRate >= 20 ? 'text-rose-400 text-sm' : item.yieldRate >= 5 ? 'text-amber-300' : 'text-slate-400'}">${item.yieldRate.toFixed(2)}%</div>
               <div class="text-[11px] text-slate-400">配息 $${item.dividend.toFixed(2)}</div>
             </td>
             <td class="py-3 px-2 text-right font-mono-num">
